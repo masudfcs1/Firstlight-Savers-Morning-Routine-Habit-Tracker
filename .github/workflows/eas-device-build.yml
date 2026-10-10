@@ -1,0 +1,73 @@
+name: EAS device build (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Device platform to build on EAS
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - android
+          - ios
+      profile:
+        description: Preview for registered devices or production for later store submission
+        type: choice
+        required: true
+        default: preview
+        options:
+          - preview
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eas-device-${{ github.ref }}-${{ inputs.platform }}-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  submit-build:
+    name: Submit signed device build to EAS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      BUILD_PLATFORM: ${{ inputs.platform }}
+      BUILD_PROFILE: ${{ inputs.profile }}
+    steps:
+      - name: Check EAS authentication is configured
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo '::error::Add an EXPO_TOKEN repository Actions secret and follow .github/BUILDING.md before running device builds.'
+            exit 1
+          fi
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify the app is linked to an EAS project
+        run: |
+          npx expo config --type public --json > "$RUNNER_TEMP/expo-config.json"
+          node -e 'const fs = require("fs"); const config = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/expo-config.json", "utf8")); if (!config.extra?.eas?.projectId) { console.error("Run eas init locally, commit the projectId, and configure signing credentials first. See .github/BUILDING.md."); process.exit(1); }'
+      - name: Submit the build request
+        run: >-
+          npx --yes eas-cli@24.12.1 build
+          --platform "$BUILD_PLATFORM"
+          --profile "$BUILD_PROFILE"
+          --non-interactive --no-wait
+      - name: Explain the submitted build
+        run: |
+          printf '%s\n' \
+            '### EAS build request submitted' \
+            'Use the EAS build URL in the previous step to check compilation and download the signed device artifact.' \
+            'A successful GitHub job means EAS accepted the request, not that the native build has finished. This workflow does not submit to an app store.' \
+            >> "$GITHUB_STEP_SUMMARY"

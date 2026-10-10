@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "FirstLight S.A.V.E.R.S.",
+    "slug": "firstlight-savers",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "firstlight-savers",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FAF7F0",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.firstlight.savers"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#173F35",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.firstlight.savers"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sharing",
+      "expo-font",
+      "expo-notifications"
+    ]
+  }
+}

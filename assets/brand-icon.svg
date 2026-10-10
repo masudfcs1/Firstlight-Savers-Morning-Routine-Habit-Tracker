@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="72%">
+      <stop offset="0" stop-color="#28584B"/>
+      <stop offset="1" stop-color="#102F28"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F3C47F"/>
+      <stop offset="1" stop-color="#E8AD63"/>
+    </linearGradient>
+    <clipPath id="horizon">
+      <rect x="0" y="0" width="1024" height="574"/>
+    </clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="500" r="332" fill="none" stroke="#B8C9AF" stroke-opacity="0.10" stroke-width="3"/>
+  <circle cx="512" cy="500" r="272" fill="none" stroke="#FAF7F0" stroke-opacity="0.08" stroke-width="2"/>
+  <g fill="none" stroke="#E8AD63" stroke-linecap="round" stroke-width="24">
+    <path d="M366 257l30 50"/>
+    <path d="M658 257l-30 50"/>
+    <path d="M271 366l52 30"/>
+    <path d="M753 366l-52 30"/>
+    <path d="M242 516h58"/>
+    <path d="M724 516h58"/>
+  </g>
+  <circle cx="512" cy="526" r="176" fill="url(#sun)" clip-path="url(#horizon)"/>
+  <path d="M220 579C329 550 401 566 512 579c111 13 183 29 292 0" fill="none" stroke="#FAF7F0" stroke-linecap="round" stroke-width="30"/>
+  <path d="M300 664c82-38 144-45 212-17 68-28 130-21 212 17" fill="none" stroke="#B8C9AF" stroke-linecap="round" stroke-width="25"/>
+  <path d="M378 748c48-24 91-29 134-10 43-19 86-14 134 10" fill="none" stroke="#B8C9AF" stroke-linecap="round" stroke-opacity="0.55" stroke-width="18"/>
+</svg>

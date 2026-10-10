@@ -1,0 +1,185 @@
+name: Android & iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  quality:
+    name: Typecheck, lint & tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --ci
+      - name: Verify Expo dependency versions
+        run: npx expo install --check
+      - name: Export the web preview
+        run: npx expo export --platform web --output-dir dist-web
+      - name: Upload web preview
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: firstlight-web-${{ github.run_number }}
+          path: dist-web/
+          if-no-files-found: error
+          retention-days: 14
+
+  android:
+    name: Android preview APK
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      - name: Generate the Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Cache Gradle and validate the generated wrapper
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Install Android SDK components
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006'
+      # Expo's generated release variant uses the public debug keystore.
+      # Release bundles JavaScript for standalone testing; it is not Play Store signed.
+      - name: Build a standalone preview APK
+        working-directory: android
+        run: >-
+          ./gradlew :app:assembleRelease
+          --no-daemon --max-workers=2 --stacktrace
+          -PreactNativeArchitectures=arm64-v8a,x86_64
+          '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g'
+      - name: Verify APK signature
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose \
+            android/app/build/outputs/apk/release/app-release.apk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: firstlight-android-preview-${{ github.run_number }}
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Explain the Android artifact
+        run: |
+          printf '%s\n' \
+            '### Android preview APK' \
+            'Download the APK artifact and install it on an ARM64 Android device or x86_64 emulator. JavaScript is included; Metro is not required.' \
+            'This preview uses the Expo template debug signing key. It is for testing, not Play Store distribution.' \
+            >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: iPhone simulator app
+    needs: quality
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      # Expo SDK 57 needs Xcode 26.4+. Keep a stable supported SDK instead of a beta.
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: xcodebuild -version
+      - run: npm ci
+      - name: Generate the iOS project
+        run: npx expo prebuild --platform ios --no-install
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+      - name: Find the generated app workspace and scheme
+        run: |
+          workspace_path="$(find ios -maxdepth 1 -type d -name '*.xcworkspace' -print -quit)"
+          scheme_path="$(find ios -path '*/xcshareddata/xcschemes/*.xcscheme' -not -path 'ios/Pods/*' -print -quit)"
+          test -n "$workspace_path"
+          test -n "$scheme_path"
+          printf 'APP_WORKSPACE=%s\n' "$workspace_path" >> "$GITHUB_ENV"
+          printf 'APP_SCHEME=%s\n' "$(basename "$scheme_path" .xcscheme)" >> "$GITHUB_ENV"
+      - name: Build the unsigned iPhone simulator app
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace "$APP_WORKSPACE" \
+            -scheme "$APP_SCHEME" \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/ios \
+            -resultBundlePath build/ios-build.xcresult \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            build | tee build-ios.log
+      - name: Package the simulator app
+        run: |
+          app_path="$(find build/ios/Build/Products/Release-iphonesimulator -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$app_path"
+          mkdir -p artifacts
+          ditto -c -k --sequesterRsrc --keepParent "$app_path" artifacts/firstlight-ios-simulator-arm64.zip
+      - name: Upload iOS simulator app
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: firstlight-ios-simulator-${{ github.run_number }}
+          path: artifacts/firstlight-ios-simulator-arm64.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Xcode diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: firstlight-ios-diagnostics-${{ github.run_number }}
+          path: |
+            build-ios.log
+            build/ios-build.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Explain the iOS artifact
+        run: |
+          printf '%s\n' \
+            '### iPhone simulator app' \
+            'Download and unzip the simulator artifact, then drag the .app into an iPhone Simulator on an Apple Silicon Mac. JavaScript is included.' \
+            'This unsigned simulator build cannot be installed on a physical iPhone. Use the manual EAS device workflow after setting up Apple signing credentials for device builds.' \
+            >> "$GITHUB_STEP_SUMMARY"
