@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FirstLight S.A.V.E.R.S.",
+    "name": "FirstLight SAVERS",
     "slug": "firstlight-savers",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,6 +30,11 @@
       "expo-sharing",
       "expo-font",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "033e51ce-2e30-4e77-bed8-1a20c3510869"
+      }
+    }
   }
 }
