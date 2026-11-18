@@ -82,7 +82,8 @@ jobs:
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           set +o pipefail
           yes 2>/dev/null | sdkmanager --licenses
-          yes 2>/dev/null | sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006'
+          yes 2>/dev/null | sdkmanager 'platforms;android-37' 'build-tools;37.0.0' 'ndk;27.1.12297006' || \
+          yes 2>/dev/null | sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006' || true
       # Expo's generated release variant uses the public debug keystore.
       # Release bundles JavaScript for standalone testing; it is not Play Store signed.
       - name: Build a standalone preview APK
@@ -94,7 +95,8 @@ jobs:
           '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g'
       - name: Verify APK signature
         run: |
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose \
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          "$APKSIGNER" verify --verbose \
             android/app/build/outputs/apk/release/app-release.apk
       - name: Upload Android APK
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -117,7 +119,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 90
     env:
-      # Expo SDK 57 needs Xcode 26.4+. Keep a stable supported SDK instead of a beta.
+      # Expo SDK 58 needs Xcode 26.4+. Keep a stable supported SDK instead of a beta.
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

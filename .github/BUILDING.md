@@ -14,7 +14,7 @@ Open **Actions → Android & iOS → a successful run → Artifacts**. Artifacts
 | `firstlight-ios-simulator-*` | An unsigned Release `.app`, packaged in `firstlight-ios-simulator-arm64.zip`. | Extract both ZIP layers and drag the `.app` into an iPhone Simulator on an Apple Silicon Mac. Metro is not required. |
 | `firstlight-web-*` | A static web export. | Extract it and serve the directory with a static HTTP server. |
 
-The Android preview key is not a production upload key. The iOS simulator app cannot run on a physical iPhone and is not an IPA. These automatic builds require no Expo account, Apple signing secrets, or store credentials. The simulator build uses Xcode 26.6 on GitHub's `macos-26` runner, matching Expo SDK 57's Xcode 26.4-or-newer requirement.
+The Android preview key is not a production upload key. The iOS simulator app cannot run on a physical iPhone and is not an IPA. These automatic builds require no Expo account, Apple signing secrets, or store credentials. The simulator build uses Xcode 26.6 on GitHub's `macos-26` runner, matching Expo SDK 58's Xcode 26.4-or-newer requirement.
 
 ## Signed Android and physical iPhone builds
 
