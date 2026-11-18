@@ -23,7 +23,8 @@
       "package": "com.firstlight.savers"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "static"
     },
     "plugins": [
       "expo-sharing",
