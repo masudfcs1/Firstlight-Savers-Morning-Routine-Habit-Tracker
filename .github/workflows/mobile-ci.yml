@@ -161,17 +161,22 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY='' \
             build | tee build-ios.log
-      - name: Package the simulator app
+      - name: Package the simulator app and IPA
         run: |
           app_path="$(find build/ios/Build/Products/Release-iphonesimulator -maxdepth 1 -type d -name '*.app' -print -quit)"
           test -n "$app_path"
           mkdir -p artifacts
           ditto -c -k --sequesterRsrc --keepParent "$app_path" artifacts/firstlight-ios-simulator-arm64.zip
-      - name: Upload iOS simulator app
+          mkdir -p Payload
+          cp -R "$app_path" Payload/
+          zip -r artifacts/firstlight-ios-unsigned.ipa Payload
+      - name: Upload iOS builds
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: firstlight-ios-simulator-${{ github.run_number }}
-          path: artifacts/firstlight-ios-simulator-arm64.zip
+          name: firstlight-ios-builds-${{ github.run_number }}
+          path: |
+            artifacts/firstlight-ios-simulator-arm64.zip
+            artifacts/firstlight-ios-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
       - name: Upload Xcode diagnostics on failure

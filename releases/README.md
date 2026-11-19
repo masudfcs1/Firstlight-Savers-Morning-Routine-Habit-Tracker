@@ -23,24 +23,22 @@ Each push to `main` automatically builds a standalone Release APK:
 
 ---
 
-## 2. Physical iPhone iOS (.ipa)
+## 2. iOS Applications (.ipa & Simulator)
 
-Apple requires all physical iOS applications to be cryptographically signed with an Apple Developer certificate.
+### Building iOS without Apple ID / Developer Account:
+We have configured `eas.json` so building for iOS never prompts for an Apple ID:
+```bash
+npm run build:ipa
+```
+EAS will compile the iOS application in the cloud without requiring any Apple Developer credentials.
 
-### Option A: Build signed `.ipa` via EAS (Recommended for Physical iPhones)
-1. Run in your terminal:
-   ```bash
-   npx eas-cli login
-   npx eas-cli init
-   ```
-2. Build the physical device `.ipa`:
-   ```bash
-   npx eas-cli build --platform ios --profile preview
-   ```
-3. EAS will sign and compile the `.ipa` in the cloud. Once completed, download the `.ipa` file into this `releases/` folder or scan the QR code to install it directly on registered iPhones.
-
-### Option B: iOS Simulator App (No Apple account needed)
-If testing on a Mac iOS Simulator:
+### Automatic Free iOS Builds from GitHub Actions:
+Every push to `main` automatically compiles on GitHub's macOS runner with zero Apple ID:
 1. Open [GitHub Actions Runs](https://github.com/masudfcs1/Firstlight-Savers-Morning-Routine-Habit-Tracker/actions).
-2. Download the artifact **`firstlight-ios-simulator`**.
-3. Drag and drop the `.app` directly into the iOS Simulator.
+2. Download the artifact **`firstlight-ios-builds`**.
+3. It contains both `firstlight-ios-unsigned.ipa` and `firstlight-ios-simulator-arm64.zip`.
+
+### Installing on a Physical iPhone (Without Paid Apple Developer Account):
+Because Apple blocks unsigned IPAs from installing directly on iPhones:
+- **Free Sideloading (No Paid Account)**: Use [Sideloadly](https://sideloadly.io/) or [AltStore](https://altstore.io/) on your PC. Connect your iPhone via USB, select `firstlight-ios-unsigned.ipa`, and install it onto your phone for free.
+- **Expo Go (Instant & Wireless)**: Run `npx expo start` and scan the QR code using your iPhone's camera (Expo Go installed from the App Store).
