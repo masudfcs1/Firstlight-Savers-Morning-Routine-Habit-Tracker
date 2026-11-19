@@ -10,7 +10,10 @@
     "backgroundColor": "#FAF7F0",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.firstlight.savers"
+      "bundleIdentifier": "com.firstlight.savers",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
